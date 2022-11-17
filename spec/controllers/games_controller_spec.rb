@@ -124,18 +124,28 @@ RSpec.describe GamesController, type: :controller do
 
     context 'when the user is logged in' do
       before(:each) { sign_in user }
-        
-      context 'attempt to answer question of his own game' do
-        before do
-          put :answer, id: game_w_questions.id, letter: game_w_questions.current_game_question.correct_answer_key
-          @game = assigns(:game)
-        end
+      let(:q) { game_w_questions.current_game_question }
 
-        it 'answers correct' do    
+      context 'attempt to answer question of his own game' do
+
+        it 'answers correct' do
+          put :answer, id: game_w_questions.id, letter: q.correct_answer_key
+          @game = assigns(:game)
+
           expect(@game.finished?).to be false
           expect(@game.current_level).to be > 0
           expect(response).to redirect_to(game_path(@game))
           expect(flash.empty?).to be true 
+        end
+
+        it 'answers incorrect' do 
+          incorrect_answer = (q.variants.keys - [q.correct_answer_key]).sample
+          put :answer, id: game_w_questions.id, letter: incorrect_answer
+          @game = assigns(:game)
+
+          expect(@game.finished?).to be true
+          expect(response).to redirect_to(user_path(user))
+          expect(flash[:alert]).to be    
         end
       end
     end
