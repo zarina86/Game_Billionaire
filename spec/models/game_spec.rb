@@ -135,13 +135,75 @@ RSpec.describe Game, type: :model do
 
   describe '#current_game_question' do
     it 'returns current game question' do
-      expect(game_w_questions.current_game_question).to eq(game_w_questions.game_questions.first)
+      expect(game_w_questions.current_game_question).to eq(game_w_questions.game_questions[0])
     end
   end
   
   describe '#previous_level' do
     it 'returns previous level of the game' do
       expect(game_w_questions.previous_level).to eq(-1)
+    end
+  end
+
+  describe "#answer_current_question!" do
+    context "when answer is correct" do
+      let!(:q) { game_w_questions.current_game_question }
+      let!(:level) { game_w_questions.current_level}
+      let!(:answer_key) { game_w_questions.answer_current_question!(game_w_questions.current_game_question.correct_answer_key) }
+
+      it 'game in progress' do 
+        expect(answer_key).to be true
+        expect(game_w_questions.current_level).to eq(1)
+        expect(game_w_questions.finished?).to be false
+      end      
+
+      context "question is last" do
+        let!(:level) { Question::QUESTION_LEVELS.max }
+        let!(:game_w_questions) { FactoryBot.create(:game_with_questions, current_level: level) }
+
+        it "rewards with prize" do
+          expect(game_w_questions.prize).to eq(Game::PRIZES.max)
+        end
+
+        it "finishes with the game's status won" do
+          expect(game_w_questions.status).to eq(:won)
+        end
+      end
+
+      context "question is not last" do
+        let!(:level) { rand(0..Question::QUESTION_LEVELS.max - 1) }
+        let!(:game_w_questions) { FactoryBot.create(:game_with_questions, current_level: level) }
+
+        it "moves to next level" do
+          expect(game_w_questions.current_level).to eq(level + 1)
+        end
+
+        it "continues the game" do
+          expect(game_w_questions.status).to eq(:in_progress)
+        end
+      end
+
+      context "when time is over" do
+        let!(:game_w_questions) { FactoryBot.create(:game_with_questions, created_at: 1.hours.ago) }
+
+        it "finishes with the game's status timeout" do
+          expect(game_w_questions.status).to eq(:timeout)
+        end
+      end
+    end
+
+    context "when answer is incorrect" do
+      before(:each) do
+        game_w_questions.answer_current_question!('b')
+      end
+
+      it "finishes the game" do
+        expect(game_w_questions.finished?).to be true
+      end
+
+      it "finishes with the game's status fail" do
+        expect(game_w_questions.status).to eq(:fail)
+      end
     end
   end
 end
