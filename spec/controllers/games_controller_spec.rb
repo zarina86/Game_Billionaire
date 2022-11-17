@@ -62,7 +62,7 @@ RSpec.describe GamesController, type: :controller do
   describe '#show' do
     context 'when the user is anonymous' do
       before do 
-        post :create
+        get :show, id: game_w_questions.id
         @game = assigns(:game)
       end
       
