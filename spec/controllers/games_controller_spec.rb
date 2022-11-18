@@ -193,4 +193,34 @@ RSpec.describe GamesController, type: :controller do
       end
     end
   end
+  
+  describe '#help' do
+    context 'when the user is logged in' do
+      context 'when the user takes audience help' do
+        context'before user takes help' do
+          it 'checks that user does not take help before' do
+            expect(game_w_questions.current_game_question.help_hash[:audience_help]).not_to be
+            expect(game_w_questions.audience_help_used).to be false
+          end
+        end
+
+        context 'after user takes help' do
+          before do
+            sign_in (user)
+            put :help, id: game_w_questions.id, help_type: :audience_help
+          end
+          
+          it 'uses audience help' do
+            @game = assigns(:game)
+
+            expect(@game.finished?).to be false
+            expect(@game.audience_help_used).to be true
+            expect(@game.current_game_question.help_hash[:audience_help]).to be
+            expect(@game.current_game_question.help_hash[:audience_help].keys).to contain_exactly('a', 'b', 'c', 'd')
+            expect(response).to redirect_to(game_path(@game))
+          end
+        end        
+      end
+    end
+  end
 end
