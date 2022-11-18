@@ -96,4 +96,23 @@ RSpec.describe GameQuestion, type: :model do
       expect(ah.keys).to contain_exactly('a', 'b', 'c', 'd')
     end
   end
+
+  describe '#friend_call' do
+    let(:friend_call) { game_question.help_hash[:friend_call] }
+    
+    context 'before friend call use' do
+      it 'checks that user did not use friend call before' do
+        expect(friend_call).not_to be
+      end
+    end
+
+    context 'after friend call use' do
+      before { game_question.add_friend_call }
+      it 'checks friend_call' do
+        expect(game_question.help_hash).to include(:friend_call)
+        expect(friend_call).to be_a(String)
+        expect(friend_call).to match(/[ABCD]/)
+      end
+    end
+  end
 end
