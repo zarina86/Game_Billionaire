@@ -195,6 +195,21 @@ RSpec.describe GamesController, type: :controller do
   end
   
   describe '#help' do
+    context 'when the user is anonymous' do 
+      context 'when the user takes audience help' do
+        before  do
+           put :help, id: game_w_questions.id, help_type: :audience_help 
+           @game = assigns(:game)
+        end
+
+        it 'attempt to take help is prohibited' do
+          expect(@game).to be_nil
+          expect(response.status).not_to eq(200)
+          expect(response).to redirect_to(new_user_session_path)
+          expect(flash[:alert]).to be
+        end
+      end
+    end
     context 'when the user is logged in' do
       context 'when the user takes audience help' do
         context'before user takes help' do
@@ -220,6 +235,34 @@ RSpec.describe GamesController, type: :controller do
             expect(response).to redirect_to(game_path(@game))
           end
         end        
+      end
+      
+      context 'when the user takes fifty_fifty' do
+        context'before user takes help' do
+          it 'checks that user does not take help before' do
+            expect(game_w_questions.current_game_question.help_hash[:fifty_fifty]).not_to be
+            expect(game_w_questions.fifty_fifty_used).to be false
+          end
+        end
+        
+        context 'after user takes help' do
+          before do
+            sign_in (user)
+            put :help, id: game_w_questions.id, help_type: :fifty_fifty
+          end
+
+          it 'uses fifty_fifty' do
+            @game = assigns(:game)
+            correct_answer_key = @game.current_game_question.correct_answer_key
+
+            expect(@game.finished?).to be false
+            expect(@game.fifty_fifty_used).to be true
+            expect(@game.current_game_question.help_hash[:fifty_fifty]).to be
+            expect(@game.current_game_question.help_hash[:fifty_fifty].size).to eq(2)
+            expect(@game.current_game_question.help_hash[:fifty_fifty]).to include(correct_answer_key)
+            expect(response).to redirect_to(game_path(@game))
+          end
+        end
       end
     end
   end
